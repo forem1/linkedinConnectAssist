@@ -5,14 +5,14 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 SESSION_KEY = ""
-SEARCH = "amazon recruiter"
+SEARCH = "google recruiter"
 TEXT = "I'm an experienced software and hardware engineer actively seeking a job with relocation or remote possibilities. I'm open to exploring various roles and would greatly appreciate your assistance in finding suitable positions. Your consideration of my profile would mean a lot to me."
 
 page = 1
 totalCounter = 0
 today = 0
 
-def main():
+def connectionSender():
     global page, today, totalCounter
     # path to browser web driver
     driver = webdriver.Chrome()
@@ -66,6 +66,7 @@ def main():
             modal.find_element(By.TAG_NAME, "textarea").send_keys(f"Hello, {user[0]}.\n{TEXT}")
             sleep(2)
             modal.find_element(By.CSS_SELECTOR, "button[aria-label='Send now']").click()  # Click on Send
+
             totalCounter = totalCounter + 1
             today = today + 1
             print(f"Today {today}")
@@ -76,6 +77,65 @@ def main():
         f = open("log.txt", "w", encoding="utf-8")
         f.write(json.dumps({'total': totalCounter, 'currentPage': page, 'search': SEARCH}))
         f.close()
+
+
+def emailCollectorFromContacts():
+    listOfUsers = []
+    listOfEmails = []
+
+    driver = webdriver.Chrome()
+    driver.get('http://linkedin.com')
+    driver.add_cookie({"name": "li_at", "value": SESSION_KEY})
+    driver.get(f"https://www.linkedin.com/mynetwork/invite-connect/connections/")
+
+    sleep(5)
+
+    list = driver.find_element(By.CLASS_NAME, 'scaffold-finite-scroll')
+
+    try:
+        while (True):
+            moreButton = list.find_element(By.CLASS_NAME, "scaffold-finite-scroll__load-button")
+            print("Loaded more users")
+            moreButton.click()
+            sleep(5)
+    except:
+        pass
+
+    rows = list.find_element(By.TAG_NAME, "ul").find_elements(By.TAG_NAME, "li")  # get all connections of the rows
+    for row in rows:
+        try:
+            name = row.find_element(By.CLASS_NAME, "mn-connection-card__name").text
+            link = row.find_element(By.TAG_NAME, "a").get_attribute("href")
+            listOfUsers.append([name, link])
+        except:
+            pass
+
+    print(f"Total contacts: {len(listOfUsers)}")
+
+    f = open("emailsFromContacts.txt", "w", encoding="utf-8")
+    f.write(json.dumps(listOfUsers))
+    f.close()
+
+    for user in listOfUsers:
+        print(f"Work with {user[0]}")
+        driver.get(user[1]+"overlay/contact-info/")
+
+        sleep(5)
+
+        try:
+            email = driver.find_element(By.CLASS_NAME, "ci-email").find_element(By.TAG_NAME, "a").get_attribute("href").split(':')[1]
+            print(email)
+            listOfEmails.append([email, user[0], user[1]])
+        except:
+            print(f"{user[0]}'s email not found")
+            f = open("emailsFromContacts.txt", "w", encoding="utf-8")
+            f.write(json.dumps(listOfEmails))
+            f.close()
+
+    f = open("emailsFromContacts.txt", "w", encoding="utf-8")
+    f.write(json.dumps(listOfEmails))
+    f.close()
+
 
 
 if __name__ == "__main__":
@@ -90,7 +150,9 @@ if __name__ == "__main__":
             totalCounter = data['total']
             f.close()
 
-        main()
+        # connectionSender()
+        emailCollectorFromContacts()
+
     except Exception as e:
         f = open("errors.txt", "a", encoding="utf-8")
         f.write(str(e))
