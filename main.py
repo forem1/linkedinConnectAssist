@@ -5,7 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 SESSION_KEY = ""
-SEARCH = "apple recruiter"
+SEARCH = "amazon recruiter"
 TEXT = "I'm an experienced software and hardware engineer actively seeking a job with relocation or remote possibilities. I'm open to exploring various roles and would greatly appreciate your assistance in finding suitable positions. Your consideration of my profile would mean a lot to me."
 
 page = 1
@@ -21,15 +21,21 @@ def main():
 
     while(True):
         print(f"Page {page}")
-        driver.get(f"http://linkedin.com/search/results/people/?keywords={SEARCH}&page={str(page)}")
+        driver.get(f"http://linkedin.com/search/results/people/?keywords={SEARCH}&page={page}&origin=SWITCH_SEARCH_VERTICAL")
 
         listOfUsers = []
+
+        sleep(5)
 
         list = driver.find_element(By.CLASS_NAME, 'reusable-search__entity-result-list')
         rows = list.find_elements(By.TAG_NAME, "li")  # get all of the rows
         for row in rows:
             try:
-                name = row.find_element(By.CSS_SELECTOR, "span[aria-hidden='true']").text.split(' ')[0]
+                tempName = row.find_element(By.CSS_SELECTOR, "span[aria-hidden='true']").text.split(' ')
+                if len(tempName) <= 5:
+                    name = tempName[0]
+                else:
+                    continue
                 connectButton = row.find_element(By.CLASS_NAME, "artdeco-button")
                 connectButtonText = row.find_element(By.CLASS_NAME, "artdeco-button__text").text
                 if connectButtonText == "Connect" and (len(name) + len(TEXT) <= 300):
@@ -38,12 +44,12 @@ def main():
                 pass
         print(listOfUsers)
 
-        sleep(2)
+        sleep(1)
 
         for user in listOfUsers:
             print(f"Write to {user[0]}")
             user[1].click()
-            sleep(10)
+            sleep(1)
             modal = driver.find_element(By.CLASS_NAME, "send-invite")
 
             try:
@@ -54,16 +60,16 @@ def main():
             except:
                 pass
 
-            sleep(3)
+            sleep(2)
             modal.find_element(By.CSS_SELECTOR, "button[aria-label='Add a note']").click() # Click on Add a note
-            sleep(3)
+            sleep(1)
             modal.find_element(By.TAG_NAME, "textarea").send_keys(f"Hello, {user[0]}.\n{TEXT}")
-            sleep(5)
+            sleep(2)
             modal.find_element(By.CSS_SELECTOR, "button[aria-label='Send now']").click()  # Click on Send
             totalCounter = totalCounter + 1
             today = today + 1
             print(f"Today {today}")
-            sleep(2)
+            sleep(1)
         page = page + 1
 
         print(f"Total {totalCounter}")
@@ -72,7 +78,7 @@ def main():
         f.close()
 
 
-if __name__ == __name__:
+if __name__ == "__main__":
     try:
         if not os.path.exists("log.txt"):
             f = open("log.txt", "w", encoding="utf-8")
